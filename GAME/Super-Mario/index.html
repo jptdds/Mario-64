@@ -1,0 +1,1132 @@
+<html>
+<head>
+    <title>Super Mario 64</title>
+    <style>
+        @font-face {
+            font-family: 'Mario64';
+            src: url('/Mario64.ttf') format('truetype');
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: 'Mario64', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #gameContainer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 960px;
+            max-height: 720px;
+            margin: 0 auto;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border: none;
+            box-shadow: none;
+            max-width: 960px;
+            max-height: 720px;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .loading img {
+            width: 300px;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 85, 85, 0.5);
+        }
+
+        .loading-text {
+            font-size: 24px;
+            color: #ff5555;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        #infoBar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #closeButton {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 5px;
+            font-family: 'Mario64', Arial, sans-serif;
+        }
+
+        #closeButton:hover {
+            color: #ff5555;
+        }
+
+        #mobileControls {
+            position: fixed;
+            bottom: 60px;
+            left: 20px;
+            display: none;
+            z-index: 1000;
+        }
+
+        @media (max-width: 768px) {
+            #mobileControls {
+                display: block;
+            }
+        }
+
+        #dpad {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            touch-action: none;
+        }
+
+        .dpad-stick {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        #actionButtons {
+            position: fixed;
+            bottom: 40px;
+            right: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            #actionButtons {
+                display: flex;
+            }
+        }
+
+        .action-button {
+            width: 65px;
+            height: 65px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            color: white;
+            font-family: 'Mario64', Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            touch-action: manipulation;
+            font-size: 18px;
+            cursor: pointer;
+            text-align: center;
+            line-height: 1.2;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        #buttonA {
+            background: rgba(255, 0, 0, 0.4);
+        }
+
+        #buttonB {
+            background: rgba(0, 255, 0, 0.4);
+        }
+
+        #buttonCrouch {
+            background: rgba(255, 255, 0, 0.4);
+        }
+
+        #buttonStart {
+            background: rgba(128, 128, 128, 0.4);
+        }
+
+        /* Custom Buttons Styling */
+        .custom-button-row {
+            position: fixed;
+            top: 20px;
+            right: 20px; /* Adjust initial position */
+            z-index: 1001;
+            display: flex;
+            gap: 10px; /* Space between buttons */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            justify-content: flex-end; /* Align buttons to the right */
+        }
+
+        .custom-button-row .action-button {
+            width: 50px;
+            height: 50px;
+            font-size: 12px; /* Smaller font for smaller buttons */
+            border-radius: 5px; /* Slightly less rounded */
+            text-align: center;
+            padding: 0; /* Remove padding */
+            box-sizing: border-box;
+        }
+
+         /* Specific custom button styles */
+        #buttonStopwatch { background: rgba(0, 128, 255, 0.4); } /* Blue-ish for stopwatch */
+        #buttonLuigi { background: rgba(0, 128, 0, 0.4); } /* Green-ish for Luigi */
+        #buttonScrewSound { background: rgba(255, 165, 0, 0.4); } /* Orange */
+        #buttonWorstSound { background: rgba(150, 50, 200, 0.4); } /* Purple */
+        #buttonChaoticSound { background: rgba(0, 200, 0, 0.4); font-size: 10px;} /* Greener */
+        #buttonChaosSound { background: rgba(100, 100, 255, 0.4); font-size: 10px; } /* Lighter Blue */
+        #buttonWeirdSound { background: rgba(255, 0, 255, 0.4); } /* Pink */
+        #buttonMessedUp { background: rgba(100, 50, 0, 0.4); font-size: 10px;} /* Brown */
+        #buttonSuffer { background: rgba(200, 50, 50, 0.4); } /* Reddish for Suffer */
+        #buttonStab { background: rgba(150, 0, 0, 0.6); } /* Dark Red for Stab */
+
+
+        .stopwatch-display {
+            position: fixed;
+            top: 20px;
+            left: 20px; /* Position on the left */
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: 'Mario64', Arial, sans-serif;
+            z-index: 1001;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="infoBar">
+        Controls: Space = Crouch, X = Jump, C = Punch
+        <button id="closeButton">&#xd7;</button>
+    </div>
+    <div id="container">
+        <div id="gameContainer">
+            <canvas id="canvas"></canvas>
+            <div id="loading" class="loading">
+                <div class="loading-text">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobileControls">
+        <div id="dpad">
+            <div class="dpad-stick"></div>
+        </div>
+    </div>
+
+    <div id="actionButtons">
+        <button class="action-button" id="buttonA">A</button>
+        <button class="action-button" id="buttonB">B</button>
+        <button class="action-button" id="buttonCrouch">C</button>
+        <button class="action-button" id="buttonStart">Start</button>
+    </div>
+
+    <div class="custom-button-row">
+        <button class="action-button" id="buttonStopwatch">&#x23f1;&#xfe0f;</button>
+        <button class="action-button" id="buttonLuigi">Luigi</button>
+        <button class="action-button" id="buttonScrewSound">Screw</button>
+        <button class="action-button" id="buttonWorstSound">Worst</button>
+        <button class="action-button" id="buttonChaoticSound">Chaotic</button>
+        <button class="action-button" id="buttonChaosSound">Chaos</button>
+        <button class="action-button" id="buttonWeirdSound">Weird</button>
+        <button class="action-button" id="buttonMessedUp">Messed Up</button>
+        <button class="action-button" id="buttonSuffer">Suffer</button>
+        <button class="action-button" id="buttonStab">Stab</button>
+    </div>
+
+
+    <div class="stopwatch-display" id="stopwatchDisplay">00:00:00</div>
+
+    <script type="importmap">
+        {
+            "imports": {}
+        }
+    </script>
+    <script>
+        function simulateKeyEvent(key, type) {
+            const event = new KeyboardEvent(type, {
+                key: key,
+                code: key,
+                bubbles: true
+            });
+            window.dispatchEvent(event);
+        }
+
+        // --- Fat Mario Effect ---
+        let fatMarioInterval = null; // Keep track of the interval ID
+        let isFatMarioActive = false; // State variable
+
+        function transformToFatMario() {
+             if (!Module || !Module._set_mario_action || !Module._set_mario_scale_xyz || !Module._set_character_tint) {
+                console.warn('Module or required functions not available for Fat Mario.');
+                return;
+            }
+
+            const baseScaleX = 3.0;
+            const baseScaleY = 3.0;
+            const baseScaleZ = 2.8;
+            const scaleRandomness = 0.5;
+            const tintRandomness = 100;
+
+            // Clear existing interval if it exists
+            if (fatMarioInterval) {
+                 clearInterval(fatMarioInterval);
+            }
+
+            // Apply initial large scale and tint
+            Module._set_mario_scale_xyz(baseScaleX, baseScaleY, baseScaleZ);
+            Module._set_character_tint(255, 150, 150);
+             isFatMarioActive = true;
+
+            fatMarioInterval = setInterval(() => {
+                if (Module._set_mario_scale_xyz) {
+                    const currentScaleX = baseScaleX + (Math.random() - 0.5) * scaleRandomness * 2;
+                    const currentScaleY = baseScaleY + (Math.random() - 0.5) * scaleRandomness * 2;
+                    const currentScaleZ = baseScaleZ + (Math.random() - 0.5) * scaleRandomness * 2;
+                    Module._set_mario_scale_xyz(currentScaleX, currentScaleY, currentScaleZ);
+                }
+
+                if (Module._set_character_tint) {
+                    const r = 255 + Math.floor((Math.random() - 0.5) * tintRandomness);
+                    const g = 150 + Math.floor((Math.random() - 0.5) * tintRandomness);
+                    const b = 150 + Math.floor((Math.random() - 0.5) * tintRandomness);
+                    Module._set_character_tint(Math.max(0, Math.min(255, r)), Math.max(0, Math.min(255, g)), Math.max(0, Math.min(255, b)));
+                }
+            }, 100);
+        }
+
+        // Function to stop Fat Mario effect
+         function stopFatMario() {
+             if (fatMarioInterval) {
+                 clearInterval(fatMarioInterval);
+                 fatMarioInterval = null;
+             }
+             isFatMarioActive = false;
+             // Reset scale and tint to normal (optional, depending on desired behavior when stopped)
+             // Module._set_mario_scale_xyz(1.0, 1.0, 1.0);
+             // Module._set_character_tint(255, 255, 255);
+         }
+
+
+        // --- Mario Suffer Effect ---
+        let sufferMarioInterval = null;
+        let isSufferMarioActive = false;
+
+        function makeMarioSuffer() {
+             if (!Module || !Module._set_mario_scale_xyz || !Module._set_character_tint) {
+                console.warn('Module or required functions not available for Mario Suffer.');
+                 alert("This feature requires specific functions in the game engine (.wasm). Cannot make Mario suffer.");
+                return;
+            }
+
+            if (!isSufferMarioActive) {
+                // Start suffering effect
+                if (sufferMarioInterval) clearInterval(sufferMarioInterval); // Clear any old interval
+
+                // Stop Fat Mario if it's active
+                 if (isFatMarioActive) {
+                     stopFatMario();
+                 }
+                 // Stop Stab effect if it's active
+                 if (stabMarioInterval || stabMarioTimeout) {
+                     stopStabMario();
+                 }
+
+
+                isSufferMarioActive = true;
+                document.getElementById('buttonSuffer').textContent = "Stop";
+                document.getElementById('buttonSuffer').style.background = 'rgba(0, 255, 0, 0.4)'; // Change color when active
+
+                const baseScale = 1.0; // Start from normal size
+                const scaleJitter = 0.3; // How much scale changes
+                const tintJitter = 150; // How much tint changes
+
+                sufferMarioInterval = setInterval(() => {
+                    // Apply chaotic scale changes
+                    const currentScaleX = baseScale + (Math.random() - 0.5) * scaleJitter * 2;
+                    const currentScaleY = baseScale + (Math.random() - 0.5) * scaleJitter * 2;
+                    const currentScaleZ = baseScale + (Math.random() - 0.5) * scaleJitter * 2;
+                    Module._set_mario_scale_xyz(currentScaleX, currentScaleY, currentScaleZ);
+
+                    // Apply chaotic tint changes
+                    const r = Math.floor(Math.random() * (255 - tintJitter)) + Math.floor((Math.random() - 0.5) * tintJitter);
+                    const g = Math.floor(Math.random() * (255 - tintJitter)) + Math.floor((Math.random() - 0.5) * tintJitter);
+                    const b = Math.floor(Math.random() * (255 - tintJitter)) + Math.floor((Math.random() - 0.5) * tintJitter);
+                    Module._set_character_tint(Math.max(0, Math.min(255, r)), Math.max(0, Math.min(255, g)), Math.max(0, Math.min(255, b)));
+
+                }, 50); // Faster interval for more rapid changes
+
+            } else {
+                // Stop suffering effect
+                stopSufferMario();
+            }
+        }
+
+        function stopSufferMario() {
+            if (sufferMarioInterval) {
+                clearInterval(sufferMarioInterval);
+                sufferMarioInterval = null;
+            }
+            isSufferMarioActive = false;
+            // Reset Mario to normal appearance
+            if (Module && Module._set_mario_scale_xyz) {
+                 Module._set_mario_scale_xyz(1.0, 1.0, 1.0);
+            }
+            if (Module && Module._set_character_tint) {
+                 Module._set_character_tint(255, 255, 255); // White/Normal tint
+            }
+            document.getElementById('buttonSuffer').textContent = "Suffer";
+            document.getElementById('buttonSuffer').style.background = 'rgba(200, 50, 50, 0.4)'; // Reset color
+        }
+
+        // --- Mario Stab Effect (New) ---
+        let stabMarioInterval = null;
+        let stabMarioTimeout = null;
+
+        function stabMarioEffect() {
+             if (!Module || !Module._set_mario_scale_xyz || !Module._set_character_tint) {
+                console.warn('Module or required functions not available for Mario Stab.');
+                alert("This feature requires specific functions in the game engine (.wasm). Cannot stab Mario.");
+                return;
+            }
+
+            // Ensure Suffer effect is stopped visually during Stab
+            if (isSufferMarioActive) {
+                 stopSufferMario(); // Stop the Suffer interval and reset appearance first
+            }
+            // Stop Fat Mario if it's active
+             if (isFatMarioActive) {
+                 stopFatMario();
+             }
+
+            // Clear any previous stab effect intervals/timeouts just in case
+            if (stabMarioInterval) clearInterval(stabMarioInterval);
+            if (stabMarioTimeout) clearTimeout(stabMarioTimeout);
+
+
+            const duration = 800; // ms
+            const intervalSpeed = 40; // ms
+            const scaleJitter = 1.0; // Max change from base 1.0 scale
+            const tintJitter = 200; // Max change from base 255,255,255 tint
+
+            // Start rapid chaotic changes
+            stabMarioInterval = setInterval(() => {
+                const currentScaleX = 1.0 + (Math.random() - 0.5) * scaleJitter * 2;
+                const currentScaleY = 1.0 + (Math.random() - 0.5) * scaleJitter * 2;
+                const currentScaleZ = 1.0 + (Math.random() - 0.5) * scaleJitter * 2;
+                 // Ensure scale doesn't go to zero or negative, maybe minimum 0.2
+                Module._set_mario_scale_xyz(
+                    Math.max(0.2, currentScaleX),
+                    Math.max(0.2, currentScaleY),
+                    Math.max(0.2, currentScaleZ)
+                );
+
+                const r = Math.floor(Math.random() * (255 - tintJitter)) + Math.floor((Math.random() - 0.5) * tintJitter);
+                const g = Math.floor(Math.random() * (255 - tintJitter)) + Math.floor((Math.random() - 0.5) * tintJitter);
+                const b = Math.floor(Math.random() * (255 - tintJitter)) + Math.floor((Math.random() - 0.5) * tintJitter);
+                Module._set_character_tint(
+                    Math.max(0, Math.min(255, r)),
+                    Math.max(0, Math.min(255, g)),
+                    Math.max(0, Math.min(255, b))
+                );
+
+            }, intervalSpeed);
+
+            // Stop the effect after the duration
+            stabMarioTimeout = setTimeout(() => {
+                clearInterval(stabMarioInterval);
+                stabMarioInterval = null;
+                // Reset Mario to normal appearance
+                if (Module && Module._set_mario_scale_xyz) {
+                     Module._set_mario_scale_xyz(1.0, 1.0, 1.0);
+                }
+                if (Module && Module._set_character_tint) {
+                     Module._set_character_tint(255, 255, 255); // White/Normal tint
+                }
+                // Note: If Suffer was active before, it remains in the 'active' state (isSufferMarioActive is true)
+                // but its interval was stopped by stopSufferMario(). User must click Suffer again to restart it.
+                // This is a design choice - Stab is a temporary disturbance that resets Mario's state afterwards.
+            }, duration);
+        }
+
+        function stopStabMario() {
+             if (stabMarioInterval) {
+                clearInterval(stabMarioInterval);
+                stabMarioInterval = null;
+             }
+             if (stabMarioTimeout) {
+                clearTimeout(stabMarioTimeout);
+                stabMarioTimeout = null;
+             }
+             // Reset Mario to normal appearance
+             if (Module && Module._set_mario_scale_xyz) {
+                  Module._set_mario_scale_xyz(1.0, 1.0, 1.0);
+             }
+             if (Module && Module._set_character_tint) {
+                  Module._set_character_tint(255, 255, 255); // White/Normal tint
+             }
+             // Important: This function doesn't change the state of isSufferMarioActive or isFatMarioActive
+             // It's primarily for cleaning up *this* specific effect.
+        }
+
+
+        var Module = {
+            canvas: document.getElementById('canvas'),
+            onRuntimeInitialized: function () {
+                document.getElementById('loading').style.display = 'none';
+                // The transformToFatMario call here makes him fat immediately on load.
+                // Let's keep it for now, but maybe make it togglable later.
+                // setTimeout(() => {
+                //     transformToFatMario();
+                // }, 1000);
+            },
+            locateFile: function (path) {
+                if (path.endsWith('.wasm')) {
+                    return '/sm64.wasm';
+                }
+                return path;
+            }
+        };
+        const levelLocations = [{
+            x: 0,
+            y: 1200,
+            z: 0
+        }, {
+            x: -1850,
+            y: 260,
+            z: -5000
+        }, {
+            x: 2500,
+            y: 1200,
+            z: -1850
+        }, {
+            x: -6000,
+            y: 1500,
+            z: 3500
+        }, {
+            x: 3500,
+            y: 7200,
+            z: -6150
+        }, {
+            x: 1000,
+            y: 3200,
+            z: 7000
+        }, {
+            x: -4600,
+            y: 4500,
+            z: -2500
+        }, {
+            x: 7100,
+            y: 1500,
+            z: 3500
+        }, {
+            x: -3600,
+            y: 2000,
+            z: 0
+        }, {
+            x: 2428,
+            y: 7647,
+            z: -3889
+        }];
+        function teleportToRandomLevel() {
+            if (Module && Module._set_mario_position) {
+                const randomLocation = levelLocations[Math.floor(Math.random() * levelLocations.length)];
+                console.log('Teleporting to:', randomLocation);
+                Module._set_mario_position(randomLocation.x, randomLocation.y, randomLocation.z);
+            } else {
+                console.warn('Module or teleport function not ready');
+            }
+        }
+        function resizeCanvas() {
+            const canvas = document.getElementById('canvas');
+            canvas.width = 960;
+            canvas.height = 720;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        Module.canvas.addEventListener('click', function () {
+            Module.canvas.focus();
+        });
+        window.addEventListener('focus', function () {
+            Module.canvas.focus();
+        });
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(() => {
+                Module.canvas.focus();
+            }, 1000);
+        });
+        const loadingElement = document.getElementById('loading');
+        if (loadingElement && Module.calledRun) { }
+        document.getElementById('closeButton').addEventListener('click', function () {
+            document.getElementById('infoBar').style.display = 'none';
+        });
+        const buttonA = document.getElementById('buttonA');
+        const buttonB = document.getElementById('buttonB');
+        const buttonCrouch = document.getElementById('buttonCrouch');
+        const buttonStart = document.getElementById('buttonStart');
+        buttonA.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const jumpKeyEvent = new KeyboardEvent('keydown', {
+                code: 'KeyX',
+                key: 'x',
+                bubbles: true
+            });
+            window.dispatchEvent(jumpKeyEvent);
+        });
+        buttonA.addEventListener('touchend', e => {
+            e.preventDefault();
+            const jumpKeyEvent = new KeyboardEvent('keyup', {
+                code: 'KeyX',
+                key: 'x',
+                bubbles: true
+            });
+            window.dispatchEvent(jumpKeyEvent);
+        });
+        buttonB.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const punchKeyEvent = new KeyboardEvent('keydown', {
+                code: 'KeyC',
+                key: 'c',
+                bubbles: true
+            });
+            window.dispatchEvent(punchKeyEvent);
+        });
+        buttonB.addEventListener('touchend', e => {
+            e.preventDefault();
+            const punchKeyEvent = new KeyboardEvent('keyup', {
+                code: 'KeyC',
+                key: 'c',
+                bubbles: true
+            });
+            window.dispatchEvent(punchKeyEvent);
+        });
+        buttonCrouch.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const crouchKeyEvent = new KeyboardEvent('keydown', {
+                code: 'Space',
+                key: ' ',
+                bubbles: true
+            });
+            window.dispatchEvent(crouchKeyEvent);
+        });
+        buttonCrouch.addEventListener('touchend', e => {
+            e.preventDefault();
+            const crouchKeyEvent = new KeyboardEvent('keyup', {
+                code: 'Space',
+                key: ' ',
+                bubbles: true
+            });
+            window.dispatchEvent(crouchKeyEvent);
+        });
+        buttonStart.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const startKeyEvent = new KeyboardEvent('keydown', {
+                code: 'Enter',
+                key: 'Enter',
+                bubbles: true
+            });
+            Module.canvas.dispatchEvent(startKeyEvent);
+        });
+        buttonStart.addEventListener('touchend', e => {
+            e.preventDefault();
+            const startKeyEvent = new KeyboardEvent('keyup', {
+                code: 'Enter',
+                key: 'Enter',
+                bubbles: true
+            });
+            Module.canvas.dispatchEvent(startKeyEvent);
+        });
+        const dpad = document.getElementById('dpad');
+        // Check if stick already exists before creating
+        let stick = dpad.querySelector('.dpad-stick');
+        if (!stick) {
+            stick = document.createElement('div');
+            stick.className = 'dpad-stick';
+            dpad.appendChild(stick);
+        }
+
+        let isDragging = false;
+        let center = {
+            x: 0,
+            y: 0
+        };
+        const maxDistance = 50;
+        dpad.addEventListener('touchstart', handleDpadTouch);
+        dpad.addEventListener('touchmove', handleDpadTouch);
+        dpad.addEventListener('touchend', () => {
+            isDragging = false;
+            stick.style.transform = 'translate(-50%, -50%)'; 
+            simulateKeyEvent('ArrowUp', 'keyup');
+            simulateKeyEvent('ArrowDown', 'keyup');
+            simulateKeyEvent('ArrowLeft', 'keyup');
+            simulateKeyEvent('ArrowRight', 'keyup');
+        });
+         dpad.addEventListener('touchcancel', () => { 
+            isDragging = false;
+            stick.style.transform = 'translate(-50%, -50%)';
+            simulateKeyEvent('ArrowUp', 'keyup');
+            simulateKeyEvent('ArrowDown', 'keyup');
+            simulateKeyEvent('ArrowLeft', 'keyup');
+            simulateKeyEvent('ArrowRight', 'keyup');
+        });
+
+        function handleDpadTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = dpad.getBoundingClientRect();
+            if (!isDragging) {
+                isDragging = true;
+                // Calculate center relative to the viewport
+                center = {
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2
+                };
+            }
+
+            // Calculate delta relative to the center
+            let deltaX = touch.clientX - center.x;
+            let deltaY = touch.clientY - center.y;
+
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            if (distance > maxDistance) {
+                deltaX = deltaX / distance * maxDistance;
+                deltaY = deltaY / distance * maxDistance;
+            }
+
+            // Position the stick using transform, relative to its initial 50%/50%
+            stick.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+
+            const angle = Math.atan2(deltaY, deltaX);
+            const threshold = maxDistance * 0.3; 
+
+            // Release all keys first
+            ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].forEach(key => {
+                simulateKeyEvent(key, 'keyup');
+            });
+
+            // Press keys based on direction if distance is above threshold
+            if (distance > threshold) {
+                // 8 directions check (approximate)
+                if (angle > -Math.PI * 7/8 && angle < -Math.PI * 1/8) simulateKeyEvent('ArrowUp', 'keydown');
+                if (angle > Math.PI * 1/8 && angle < Math.PI * 7/8) simulateKeyEvent('ArrowDown', 'keydown');
+                if (angle > Math.PI * 5/8 || angle < -Math.PI * 5/8) simulateKeyEvent('ArrowLeft', 'keydown');
+                if (angle > -Math.PI * 3/8 && angle < Math.PI * 3/8) simulateKeyEvent('ArrowRight', 'keydown');
+
+                // Diagonal checks (optional, can be added if needed for diagonal movement)
+                if (angle >= -Math.PI * 7/8 && angle < -Math.PI * 5/8) { /* Up-Left */ simulateKeyEvent('ArrowUp', 'keydown'); simulateKeyEvent('ArrowLeft', 'keydown'); }
+                if (angle >= -Math.PI * 3/8 && angle < -Math.PI * 1/8) { /* Up-Right */ simulateKeyEvent('ArrowUp', 'keydown'); simulateKeyEvent('ArrowRight', 'keydown'); }
+                if (angle >= Math.PI * 1/8 && angle < Math.PI * 3/8) { /* Down-Right */ simulateKeyEvent('ArrowDown', 'keydown'); simulateKeyEvent('ArrowRight', 'keydown'); }
+                if (angle >= Math.PI * 5/8 && angle < Math.PI * 7/8) { /* Down-Left */ simulateKeyEvent('ArrowDown', 'keydown'); simulateKeyEvent('ArrowLeft', 'keydown'); }
+
+            }
+        }
+        document.querySelectorAll('.dpad-button').forEach(button => button.remove());
+        let stopwatchInterval = null;
+        let stopwatchStartTime = 0;
+        let stopwatchRunning = false;
+        const stopwatchDisplay = document.getElementById('stopwatchDisplay');
+        const buttonStopwatch = document.getElementById('buttonStopwatch');
+        const buttonLuigi = document.getElementById('buttonLuigi');
+        const buttonScrewSound = document.getElementById('buttonScrewSound');
+        const buttonWorstSound = document.getElementById('buttonWorstSound');
+        const buttonChaoticSound = document.getElementById('buttonChaoticSound'); 
+        const buttonChaosSound = document.getElementById('buttonChaosSound');   
+        const buttonWeirdSound = document.getElementById('buttonWeirdSound'); 
+        const buttonMessedUp = document.getElementById('buttonMessedUp');
+        const buttonSuffer = document.getElementById('buttonSuffer'); // Get the new button
+        const buttonStab = document.getElementById('buttonStab');
+
+        function formatTime(ms) {
+            const hours = Math.floor(ms / 3600000);
+            const minutes = Math.floor(ms % 3600000 / 60000);
+            const seconds = Math.floor(ms % 60000 / 1000);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+        function updateStopwatch() {
+            const currentTime = Date.now() - stopwatchStartTime;
+            stopwatchDisplay.textContent = formatTime(currentTime);
+        }
+        buttonStopwatch.addEventListener('click', () => {
+            if (!stopwatchRunning) {
+                stopwatchDisplay.style.display = 'block';
+                stopwatchStartTime = Date.now();
+                stopwatchInterval = setInterval(updateStopwatch, 1000);
+                stopwatchRunning = true;
+                buttonStopwatch.style.background = 'rgba(255, 0, 0, 0.4)'; // Change color when active
+            } else {
+                clearInterval(stopwatchInterval);
+                stopwatchDisplay.style.display = 'none';
+                stopwatchRunning = false;
+                buttonStopwatch.style.background = 'rgba(0, 128, 255, 0.4)'; // Reset color
+            }
+        });
+
+        buttonLuigi.addEventListener('click', () => {
+            console.log("Luigi button clicked. Attempting to switch character...");
+            if (Module && Module._select_luigi) {
+                Module._select_luigi();
+                console.log("Called _select_luigi(). Check console for wasm-specific errors.");
+            } else {
+                console.warn("Module or _select_luigi function not available. Cannot switch to Luigi.");
+                alert("Luigi mode requires specific support in the game engine (.wasm). This feature is not available with the current game file.");
+            }
+        });
+
+        // Web Audio API for sound screwing
+        let audioContextScrew = null;
+        let oscillatorScrew = null;
+        let distortionScrew = null;
+        let isScrewSoundRunning = false;
+
+        // Function to create a distortion curve for WaveShaperNode
+        function makeDistortionCurve(amount) {
+          var k = typeof amount === 'number' ? amount : 50;
+          var n_samples = 44100;
+          var curve = new Float32Array(n_samples);
+          var deg = Math.PI / 180;
+          var i = 0;
+          var x;
+          for ( ; i < n_samples; ++i ) {
+            x = i * 2 / n_samples - 1;
+            // Using a simple tanh curve for distortion
+            curve[i] = Math.tanh(x * k);
+          }
+          return curve;
+        }
+
+        buttonScrewSound.addEventListener('click', () => {
+            if (!isScrewSoundRunning) {
+                // Start the screwed up sound
+                if (!audioContextScrew) {
+                    audioContextScrew = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                // Create oscillator (e.g., sawtooth wave)
+                oscillatorScrew = audioContextScrew.createOscillator();
+                oscillatorScrew.type = 'sawtooth'; 
+                oscillatorScrew.frequency.setValueAtTime(440, audioContextScrew.currentTime); 
+
+                // Create distortion node
+                distortionScrew = audioContextScrew.createWaveShaper();
+                distortionScrew.curve = makeDistortionCurve(100);
+                distortionScrew.oversample = '4x'; 
+
+                // Connect nodes: oscillator -> distortion -> output
+                oscillatorScrew.connect(distortionScrew);
+                distortionScrew.connect(audioContextScrew.destination);
+
+                // Start the oscillator
+                oscillatorScrew.start();
+
+                isScrewSoundRunning = true;
+                buttonScrewSound.textContent = "Stop"; 
+                buttonScrewSound.style.background = 'rgba(255, 0, 0, 0.4)'; 
+            } else {
+                // Stop the screwed up sound
+                if (oscillatorScrew) {
+                    oscillatorScrew.stop();
+                    oscillatorScrew.disconnect();
+                    oscillatorScrew = null;
+                }
+                if (distortionScrew) {
+                    distortionScrew.disconnect();
+                    distortionScrew = null;
+                }
+
+                isScrewSoundRunning = false;
+                buttonScrewSound.textContent = "Screw"; 
+                buttonScrewSound.style.background = 'rgba(255, 165, 0, 0.4)'; 
+            }
+        });
+
+        buttonSuffer.addEventListener('click', makeMarioSuffer);
+
+        // Web Audio API for 'Worst Sound' effect
+        let audioContextWorst = null;
+        let oscillatorWorst = null;
+        let gainNodeWorst = null;
+        let lfoWorst = null;
+        let lfoGainWorst = null;
+        let isWorstSoundRunning = false;
+
+        buttonWorstSound.addEventListener('click', () => {
+            if (!isWorstSoundRunning) {
+                // Start the worst sound
+                if (!audioContextWorst) {
+                    audioContextWorst = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                // Create main high-pitched oscillator (e.g., Square wave at 2000Hz)
+                oscillatorWorst = audioContextWorst.createOscillator();
+                oscillatorWorst.type = 'square';
+                oscillatorWorst.frequency.setValueAtTime(2000, audioContextWorst.currentTime); 
+
+                // Create gain node to control volume
+                gainNodeWorst = audioContextWorst.createGain();
+                gainNodeWorst.gain.setValueAtTime(0.1, audioContextWorst.currentTime); 
+
+                // Create LFO for modulating gain (Tremolo effect)
+                lfoWorst = audioContextWorst.createOscillator();
+                lfoWorst.type = 'sine'; 
+                lfoWorst.frequency.setValueAtTime(10, audioContextWorst.currentTime); 
+
+                // Create LFO gain to control the intensity of the modulation
+                lfoGainWorst = audioContextWorst.createGain();
+                lfoGainWorst.gain.setValueAtTime(0.05, audioContextWorst.currentTime); 
+
+                // Connections:
+                // Main oscillator -> Main Gain Node -> Output
+                // LFO -> LFO Gain Node -> Main Gain Node (modulation)
+                oscillatorWorst.connect(gainNodeWorst);
+                gainNodeWorst.connect(audioContextWorst.destination);
+
+                lfoWorst.connect(lfoGainWorst);
+                lfoGainWorst.connect(gainNodeWorst.gain); 
+
+                // Start oscillators
+                oscillatorWorst.start();
+                lfoWorst.start();
+
+                isWorstSoundRunning = true;
+                buttonWorstSound.textContent = "Stop"; 
+                buttonWorstSound.style.background = 'rgba(255, 0, 0, 0.4)'; 
+            } else {
+                // Stop the worst sound
+                if (oscillatorWorst) {
+                    oscillatorWorst.stop();
+                    oscillatorWorst.disconnect();
+                    oscillatorWorst = null;
+                }
+                 if (lfoWorst) {
+                    lfoWorst.stop();
+                    lfoWorst.disconnect();
+                    lfoWorst = null;
+                }
+                if (gainNodeWorst) {
+                    gainNodeWorst.disconnect();
+                    gainNodeWorst = null;
+                }
+                 if (lfoGainWorst) {
+                    lfoGainWorst.disconnect();
+                    lfoGainWorst = null;
+                }
+
+                isWorstSoundRunning = false;
+                buttonWorstSound.textContent = "Worst"; 
+                buttonWorstSound.style.background = 'rgba(150, 50, 200, 0.4)'; 
+            }
+        });
+
+        // Web Audio API for 'Chaotic Sound' effect
+        let audioContextChaotic = null;
+        let oscillatorsChaotic = [];
+        let gainNodeChaotic = null;
+        let isChaoticSoundRunning = false;
+
+        buttonChaoticSound.addEventListener('click', () => {
+            if (!isChaoticSoundRunning) {
+                // Start the chaotic sound
+                if (!audioContextChaotic) {
+                    audioContextChaotic = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                // Create multiple oscillators with varying frequencies
+                const numOscillators = 5;
+                oscillatorsChaotic = [];
+                for(let i = 0; i < numOscillators; i++) {
+                    const osc = audioContextChaotic.createOscillator();
+                    osc.type = ['sine', 'square', 'sawtooth', 'triangle'][Math.floor(Math.random() * 4)]; 
+                    osc.frequency.setValueAtTime(100 + Math.random() * 1500, audioContextChaotic.currentTime); 
+
+                    const gain = audioContextChaotic.createGain();
+                    gain.gain.setValueAtTime(0.05 + Math.random() * 0.1, audioContextChaotic.currentTime); 
+
+                    osc.connect(gain);
+                    gain.connect(audioContextChaotic.destination);
+
+                    osc.start();
+                    oscillatorsChaotic.push({ osc: osc, gain: gain });
+                }
+
+                isChaoticSoundRunning = true;
+                buttonChaoticSound.textContent = "Stop"; 
+                buttonChaoticSound.style.background = 'rgba(255, 0, 0, 0.4)'; 
+            } else {
+                // Stop the chaotic sound
+                oscillatorsChaotic.forEach(node => {
+                    if (node.osc) {
+                        node.osc.stop();
+                        node.osc.disconnect();
+                    }
+                    if (node.gain) {
+                        node.gain.disconnect();
+                    }
+                });
+                oscillatorsChaotic = [];
+
+                isChaoticSoundRunning = false;
+                buttonChaoticSound.textContent = "Chaotic"; 
+                buttonChaoticSound.style.background = 'rgba(0, 200, 0, 0.4)'; 
+            }
+        });
+
+        // Web Audio API for 'Chaos Sound' effect (different from Chaotic)
+        let audioContextChaos = null;
+        let noiseSourceChaos = null;
+        let filterChaos = null;
+        let lfoChaos = null;
+        let lfoGainChaos = null;
+        let isChaosSoundRunning = false;
+
+        buttonChaosSound.addEventListener('click', () => {
+             if (!isChaosSoundRunning) {
+                // Start the chaos sound
+                if (!audioContextChaos) {
+                    audioContextChaos = new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                // Create white noise buffer
+                const bufferSize = 2 * audioContextChaos.sampleRate;
+                const noiseBuffer = audioContextChaos.createBuffer(1, bufferSize, audioContextChaos.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+
+                // Create buffer source for noise
+                noiseSourceChaos = audioContextChaos.createBufferSource();
+                noiseSourceChaos.buffer = noiseBuffer;
+                noiseSourceChaos.loop = true; 
+
+                // Create a resonant bandpass filter
+                filterChaos = audioContextChaos.createBiquadFilter();
+                filterChaos.type = 'bandpass';
+                filterChaos.frequency.setValueAtTime(1000, audioContextChaos.currentTime); 
+                filterChaos.Q.setValueAtTime(10, audioContextChaos.currentTime); 
+
+                // Create LFO to modulate the filter frequency rapidly
+                lfoChaos = audioContextChaos.createOscillator();
+                lfoChaos.type = 'sawtooth'; 
+                lfoChaos.frequency.setValueAtTime(25, audioContextChaos.currentTime); 
+
+                // Create LFO gain to control filter modulation depth
+                lfoGainChaos = audioContextChaos.createGain();
+                lfoGainChaos.gain.setValueAtTime(800, audioContextChaos.currentTime); 
+
+                // Connections:
+                // Noise Source -> Filter -> Output
+                // LFO -> LFO Gain -> Filter Frequency (modulation)
+                noiseSourceChaos.connect(filterChaos);
+                filterChaos.connect(audioContextChaos.destination);
+
+                lfoChaos.connect(lfoGainChaos);
+                lfoGainChaos.connect(filterChaos.frequency); 
+
+                // Start sources
+                noiseSourceChaos.start();
+                lfoChaos.start();
+
+                isChaosSoundRunning = true;
+                buttonChaosSound.textContent = "Stop"; 
+                buttonChaosSound.style.background = 'rgba(255, 0, 0, 0.4)'; 
+             } else {
+                // Stop the chaos sound
+                if (noiseSourceChaos) {
+                    noiseSourceChaos.stop();
+                    noiseSourceChaos.disconnect();
+                    noiseSourceChaos = null;
+                }
+                if (filterChaos) {
+                    filterChaos.disconnect();
+                    filterChaos = null;
+                }
+                if (lfoChaos) {
+                    lfoChaos.stop();
+                    lfoChaos.disconnect();
+                    lfoChaos = null;
+                }
+                if (lfoGainChaos) {
+                    lfoGainChaos.disconnect();
+                    lfoGainChaos = null;
+                }
+
+
+                isChaosSoundRunning = false;
+                buttonChaosSound.textContent = "Chaos"; 
+                buttonChaosSound.style.background = 'rgba(100, 100, 255, 0.4)'; 
+             }
+        });
+
+        buttonMessedUp.addEventListener('click', () => {
+            alert('Messed Up button clicked!');
+        });
+
+        buttonStab.addEventListener('click', stabMarioEffect);
+    </script>
+    <script src="/sm64.js"></script>
+
+</body>
+</html>
